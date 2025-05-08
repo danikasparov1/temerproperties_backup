@@ -13,13 +13,13 @@ services:
 
   odoo17:
     build: .
-    container_name: odoo171
+    container_name: odoo1712
     user: root
     depends_on:
       - db
     ports:
-      - "1055:8069"
-      - "2052:8072" # live chat
+      - "1056:8069"
+      - "2053:8072" # live chat
     tty: true
     command: --
     environment:
