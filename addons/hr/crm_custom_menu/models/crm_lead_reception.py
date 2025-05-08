@@ -173,9 +173,10 @@ class CrmReception(models.Model):
             'user_id': assigned_user.id,  # Assigned manager
             'stage_id': stage_id,
             'type': 'opportunity',
+            
         }
 
-        # ✅ Don't use sudo or with_user: use current user context
+        
         lead = self.env['crm.lead'].with_user(assigned_user).create(lead_values)
 
 
