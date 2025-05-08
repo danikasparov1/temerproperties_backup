@@ -13,7 +13,7 @@ services:
 
   odoo17:
     build: .
-    container_name: odoo171
+    container_name: odoo1712
     user: root
     depends_on:
       - db
