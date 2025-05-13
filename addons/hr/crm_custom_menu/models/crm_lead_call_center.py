@@ -26,6 +26,13 @@ class CrmLeadCallCenter(models.Model):
     full_phone = fields.Many2many('crm.callcenter.phone', string="All Phone no", help="List of all phone numbers.", domain="[('id', 'not in', full_phone_ids)]" )
     secondary_phone = fields.Char(string="Secondary Phone", invisible=True)
     phone_prefix = fields.Char(string="Phone Prefix", compute="_compute_phone_prefix")
+    user_id = fields.Many2one(
+        'res.users',
+        string="Salesperson",
+        default=lambda self: self.env.user,
+        readonly=True,
+        help="The salesperson responsible for this lead."
+    )
     full_phone_ids = fields.Many2many(
         'crm.callcenter.phone',
         store=False,
@@ -88,6 +95,7 @@ class CrmLeadCallCenter(models.Model):
         self.ensure_one()
 
         if not self.assigned_manager_id:
+            
             raise ValidationError("No assigned manager for this reception record.")
 
         assigned_user = self.assigned_manager_id
