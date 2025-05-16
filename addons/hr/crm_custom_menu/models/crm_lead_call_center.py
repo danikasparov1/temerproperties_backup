@@ -20,7 +20,7 @@ class CrmLeadCallCenter(models.Model):
 
     name = fields.Char(string='Name', compute="compute_lead_name", required=False)
     customer_name = fields.Char(string='Customer',tracking=True, required=True)
-    site_ids = fields.Many2many('property.site', string="site", tracking=True)
+    site_ids = fields.Many2many('property.site', string="site", tracking=True, required=True)
     country_id = fields.Many2one('res.country', string="Country", default=lambda self: self.env.ref('base.et').id)
     phone_number = fields.Char(string="Phone Number")
     full_phone = fields.Many2many('crm.callcenter.phone', string="All Phone no", help="List of all phone numbers.", domain="[('id', 'not in', full_phone_ids)]" )
@@ -39,7 +39,7 @@ class CrmLeadCallCenter(models.Model):
         string="Excluded Phone Numbers"
     )
 
-    new_phone = fields.Char(string="Phone No", tracking=True)
+    new_phone = fields.Char(string="Phone No", tracking=True, required=True, help="Primary phone number of the customer.")
     source_id = fields.Many2one(
         'utm.source',
         string="Lead Source",
@@ -177,16 +177,28 @@ class CrmLeadCallCenter(models.Model):
         if call_center_group and self.env.user in call_center_group.users:
             self.source_id = 6033
 
-    @api.onchange('new_phone')
-    def _onchange_validate_phone(self):
-            for record in self:
-                if record.new_phone and record.country_id and record.country_id.code:
-                    try:
-                        parsed = phonenumbers.parse(record.new_phone, record.country_id.code)
-                        if not phonenumbers.is_valid_number(parsed):
-                            raise ValidationError(_('Invalid phone number for selected country'))
-                    except Exception as e:
-                        raise ValidationError(_('Invalid phone number format: %s') % str(e))
+    # @api.onchange('new_phone')
+    # def _onchange_validate_phone(self):
+    #         for record in self:
+    #             if record.new_phone and record.country_id and record.country_id.code:
+    #                 try:
+    #                     parsed = phonenumbers.parse(record.new_phone, record.country_id.code)
+    #                     if not phonenumbers.is_valid_number(parsed):
+    #                         raise ValidationError(_('Invalid phone number for selected country'))
+    #                 except Exception as e:
+    #                     raise ValidationError(_('Invalid phone number format: %s') % str(e))
+
+
+    @api.constrains('new_phone', 'country_id')
+    def _validate_phone_on_save(self):
+        for record in self:
+            if record.new_phone and record.country_id and record.country_id.code:
+                try:
+                    parsed = phonenumbers.parse(record.new_phone, record.country_id.code)
+                    if not phonenumbers.is_valid_number(parsed):
+                        raise ValidationError(_('Invalid phone number for selected country'))
+                except Exception as e:
+                    raise ValidationError(_('Invalid phone number format: %s') % str(e))
                 
     @api.onchange('phone_number')
     def _onchange_validate_phone(self):

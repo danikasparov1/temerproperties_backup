@@ -4,7 +4,9 @@
         "crm"
     ],
     "data":[
-        "views/chart_menu.xml"
+        "security/call_center_security.xml",
+        "views/chart_menu.xml",
+        
     ],
     "assets": {
         "web.assets_backend": [

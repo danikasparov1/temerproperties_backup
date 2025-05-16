@@ -38,24 +38,115 @@
                     <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">🏢</span>
                 </div>
                 
-                <div class="stat-card total-leads-card text-start p-3 rounded-5 shadow position-relative" t-on-click="() => goToCRMPage()">
+                <div class="stat-card website-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToWebsiteLeadsPage">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="text-dark">Website Leads</h6>
+                    </div>
+                    <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalWebsiteLeads"/></p>
+                    </div>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">🌐</span>
+                </div>
+                
+                <div class="stat-card reservation-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToOtherLeadsPage">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="text-dark">Other Sales Lead</h6>
+                    </div>
+
+                           <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalOtherLeads"/></p>
+                    </div>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📋</span>
+                </div>
+
+
+                    <!-- <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalReservations"/></p>
+                    </div>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📅</span>
+                </div> -->
+            </div>
+
+            <!-- 📊 Three Cards Row (Activity, Other Leads, Total Leads) -->
+            <div class="d-flex flex-wrap flex-md-nowrap gap-3 mb-4">
+                <!-- Activity Card -->
+                <div class="stat-card activity-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToActivitiesPage">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h6 class="text-dark">Activities</h6>
+                    </div>
+                    
+                    <div class="activity-grid">
+                        <div class="activity-row d-flex flex-wrap gap-3 mb-3">
+                            <div class="activity-item d-flex align-items-center gap-2">
+                                <span class="activity-icon">✉️</span>
+                                <div>
+                                    <small class="text-muted">Email</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.email"/></p>
+                                </div>
+                            </div>
+                            <div class="activity-item d-flex align-items-center gap-2">
+                                <span class="activity-icon">📞</span>
+                                <div>
+                                    <small class="text-muted">Call</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.call"/></p>
+                                </div>
+                            </div>
+                            <div class="activity-item d-flex align-items-center gap-2">
+                                <span class="activity-icon">📅</span>
+                                <div>
+                                    <small class="text-muted">Meeting</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.meeting"/></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-row d-flex flex-wrap gap-3">
+                            <div class="activity-item d-flex align-items-center gap-2">
+                                <span class="activity-icon">✅</span>
+                                <div>
+                                    <small class="text-muted">Todo</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.todo"/></p>
+                                </div>
+                            </div>
+                            <div class="activity-item d-flex align-items-center gap-2">
+                                <span class="activity-icon">📎</span>
+                                <div>
+                                    <small class="text-muted">Upload</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.upload"/></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other Leads Card -->
+                <div class="stat-card other-leads-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToReservationPage">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="text-dark">Total Reservations</h6>
+                    </div>
+
+                          <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalReservations"/></p>
+                    </div>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📅</span>
+                </div>
+
+
+                    <!-- <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalOtherLeads"/></p>
+                    </div>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📋</span>
+                </div> -->
+                
+                <!-- Total Leads Card -->
+                <div class="stat-card total-leads-card text-start p-3 rounded-5 shadow position-relative">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h6 class="text-dark">Total Leads</h6>
                     </div>
                     <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
-                        <p class="fw-bold fs-6"><t t-esc="stats.totalLeads"/></p>
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalAllLeads"/></p>
                     </div>
                     <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📊</span>
-                </div>
-                
-                <div class="stat-card total-customers-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToCustomerPage">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="text-dark">Total Customers</h6>
-                    </div>
-                    <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
-                        <p class="fw-bold fs-6"><t t-esc="stats.customersnew"/></p>
-                    </div>
-                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">👥</span>
                 </div>
             </div>
 
@@ -75,8 +166,8 @@
                 </div>
             </div>
 
-            <!-- 🏢 Reception Charts Section (same as Call Center) -->
-            <div class="charts-container d-flex flex-column flex-md-row gap-3 mb-4">
+            <!-- 🏢 Reception Charts Section -->
+            <div t-if="!stats.isSupervisor" class="charts-container d-flex flex-column flex-md-row gap-3 mb-4">
                 <div class="chart-card border rounded-4 p-3 bg-white shadow">
                     <h6 class="text-center">Reception Leads by Stage</h6>
                     <div class="chart-wrapper">
@@ -91,8 +182,50 @@
                 </div>
             </div>
 
-            <!-- 📊 All Leads Charts Section -->
+            <!-- 🌐 Website Charts Section -->
             <div class="charts-container d-flex flex-column flex-md-row gap-3 mb-4">
+                <div class="chart-card border rounded-4 p-3 bg-white shadow">
+                    <h6 class="text-center">Website Leads by Stage</h6>
+                    <div class="chart-wrapper">
+                        <canvas t-ref="websiteChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card border rounded-4 p-3 bg-white shadow">
+                    <h6 class="text-center">Activity Types</h6>
+                    <div class="chart-wrapper">
+                        <canvas t-ref="activityTypeChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🏢 Wing and Supervisor Charts Section -->
+            <div t-if="!stats.isSupervisor" class="charts-container d-flex flex-column flex-md-row gap-3 mb-4">
+                <div class="chart-card border rounded-4 p-3 bg-white shadow">
+                    <h6 class="text-center">Leads by Wing</h6>
+                    <div class="chart-wrapper">
+                        <canvas t-ref="wingChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card border rounded-4 p-3 bg-white shadow">
+                    <h6 class="text-center">Leads by Supervisor</h6>
+                    <div class="chart-wrapper">
+                        <canvas t-ref="supervisorChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📊 Reservation Charts Section -->
+            <div class="charts-container d-flex flex-column flex-md-row gap-3 mb-4">
+                <div class="chart-card border rounded-4 p-3 bg-white shadow">
+                    <h6 class="text-center">Reservations by Status</h6>
+                    <div class="chart-wrapper">
+                        <canvas t-ref="reservationStatusChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📊 All Leads Charts Section -->
+            <div class="charts-container d-flex flex-column flex-md-row gap-3">
                 <div class="chart-card border rounded-4 p-3 bg-white shadow">
                     <h6 class="text-center">Leads by Source</h6>
                     <div class="chart-wrapper">
@@ -106,22 +239,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 👥 Customer Charts Section -->
-            <!-- <div class="charts-container d-flex flex-column flex-md-row gap-3">
-                <div class="chart-card border rounded-4 p-3 bg-white shadow">
-                    <h6 class="text-center">Customers by Type</h6>
-                    <div class="chart-wrapper">
-                        <canvas t-ref="customerTypeChart" class="chart-canvas"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card border rounded-4 p-3 bg-white shadow">
-                    <h6 class="text-center">Customers by Country</h6>
-                    <div class="chart-wrapper">
-                        <canvas t-ref="customerCountryChart" class="chart-canvas"></canvas>
-                    </div>
-                </div>
-            </div> -->
         </div>
 
         <style>
@@ -151,7 +268,7 @@
                 width: 250px;
                 border-radius: 6px;
                 position: relative;
-                height: 120px;
+                height: auto;
                 color: black;
                 flex-grow: 1;
                 transition: transform 0.2s;
@@ -163,15 +280,59 @@
             }
             .call-center-card {
                 background: #dcfce7;
+                height: 120px;
             }
             .reception-card {
                 background: #fee2e2;
+                height: 120px;
+            }
+            .website-card {
+                background: #dbeafe;
+                height: 120px;
+            }
+            .reservation-card {
+                background: #e0f2fe;
+                height: 120px;
+            }
+            .activity-card {
+                background: #f3e8ff;
+                height: auto;
+            }
+            .other-leads-card {
+                background: #ffedd5;
+                height: 120px;
             }
             .total-leads-card {
-                background: #dbeafe;
+                background: #ecfccb;
+                height: 120px;
             }
-            .total-customers-card {
-                background: #f3e8ff;
+
+            .activity-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .activity-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .activity-item {
+                background: rgba(255, 255, 255, 0.7);
+                padding: 10px 15px;
+                border-radius: 8px;
+                flex: 1;
+                min-width: calc(33.33% - 10px);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .activity-row:last-child .activity-item {
+                min-width: calc(50% - 10px);
             }
 
             .value-oval {
@@ -191,14 +352,18 @@
                 bottom: 0;
             }
 
+            .activity-icon {
+                font-size: 20px;
+            }
+
             /* Charts Layout */
             .charts-container {
                 width: 100%;
             }
             .chart-card {
                 flex: 1;
-                min-height: 400px; /* Increased height for bigger charts */
-                min-width: 400px;  /* Increased width for bigger charts */
+                min-height: 400px;
+                min-width: 400px;
                 display: flex;
                 flex-direction: column;
             }
@@ -236,6 +401,9 @@
                 }
                 .chart-card {
                     min-height: 300px;
+                    min-width: 100%;
+                }
+                .activity-item {
                     min-width: 100%;
                 }
             }

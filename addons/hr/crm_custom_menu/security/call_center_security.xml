@@ -25,11 +25,18 @@
         </record>
         <!-- record rule-->
         <record id="crm_callcenter_user_rule" model="ir.rule">
-            <field name="name">Website Records: Only Creator Can See</field>
+            <field name="name">Call center Only Creator Can See</field>
+            <field name="model_id" ref="model_crm_callcenter"/>
+            <field name="domain_force">[('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+              <!-- <record id="crm_callcenter_user_rule" model="ir.rule">
+            <field name="name">Call Center: Only Creator Can See</field>
             <field name="model_id" ref="model_crm_callcenter"/>
             <field name="domain_force">[('create_uid', '=', user.id)]</field>
            <field name="groups" eval="[(4, ref('crm_custom_menu.group_call_center'))]"/>
-        </record>
-
+        </record> -->
+     
     </data>
 </odoo>

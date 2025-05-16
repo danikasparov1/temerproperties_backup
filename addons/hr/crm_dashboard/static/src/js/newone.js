@@ -12,6 +12,7 @@ export class ChartjsSampleCRM extends Component {
     setup() {
         this.orm = useService('orm');
         this.action = useService("action");
+        this.user = useService("user");
         
         // State management
         this.searchQuery = useState({ value: "" });
@@ -22,15 +23,30 @@ export class ChartjsSampleCRM extends Component {
         this.stats = useState({
             totalCallCenterLeads: 0,
             totalReceptionLeads: 0,
-            totalLeads: 0,
-            totalCustomers: 0,
+            totalWebsiteLeads: 0,
+            totalOtherLeads: 0,
+            totalAllLeads: 0,
+            wingLeads: {},
+            supervisorLeads: {},
+            totalReservations: 0,
+            reservationDataByStatus: [],
             callCenterData: [],
             receptionDataByStage: [],
             receptionData: [],
             leadDataBySource: [],
             leadDataByStage: [],
-            customerDataByType: [],
-            customerDataByCountry: []
+            activityTypeData: [],
+            websiteLeadDataByStage: [],
+            activityCounts: {
+                email: 0,
+                call: 0,
+                meeting: 0,
+                todo: 0,
+                upload: 0
+            },
+            isSupervisor: false,
+            currentSupervisorId: null,
+            currentWingId: null
         });
 
         // Chart references
@@ -40,137 +56,181 @@ export class ChartjsSampleCRM extends Component {
         this.receptionPieChartRef = useRef("receptionPieChart");
         this.sourceChartRef = useRef("sourceChart");
         this.stageChartRef = useRef("stageChart");
-        this.customerTypeChartRef = useRef("customerTypeChart");
-        this.customerCountryChartRef = useRef("customerCountryChart");
-        this.barChart = null;
-        this.pieChart = null;
-        this.receptionBarChart = null;
-        this.receptionPieChart = null;
-        this.sourceChart = null;
-        this.stageChart = null;
-        this.customerTypeChart = null;
-        this.customerCountryChart = null;
+        this.reservationStatusChartRef = useRef("reservationStatusChart");
+        this.wingChartRef = useRef("wingChart");
+        this.supervisorChartRef = useRef("supervisorChart");
+        this.websiteChartRef = useRef("websiteChart");
+        this.activityTypeChartRef = useRef("activityTypeChart");
+        
+        this.charts = {
+            barChart: null,
+            pieChart: null,
+            receptionBarChart: null,
+            receptionPieChart: null,
+            sourceChart: null,
+            stageChart: null,
+            reservationStatusChart: null,
+            wingChart: null,
+            supervisorChart: null,
+            websiteChart: null,
+            activityTypeChart: null
+        };
 
         // Initial setup
         onWillStart(async () => {
             await loadJS(["/web/static/lib/Chart/Chart.js"]);
+            await this.checkUserRole();
             await this.fetchStats();
         });
 
         onMounted(() => {
             this.renderCharts();
-            this.setupChartResizeListeners();
+            window.addEventListener('resize', this.handleResize);
         });
 
         onWillUnmount(() => {
             this.destroyAllCharts();
             window.removeEventListener('resize', this.handleResize);
         });
-
-        // Method binding
-        this.goToCRMPage = this.goToCRMPage.bind(this);
-        this.goToCustomerPage = this.goToCustomerPage.bind(this);
-        this.goToReceptionPage = this.goToReceptionPage.bind(this);
-        this.fetchStats = this.fetchStats.bind(this);
-        this.renderCharts = this.renderCharts.bind(this);
-        this.destroyAllCharts = this.destroyAllCharts.bind(this);
-        this.onSearchQueryChange = this.onSearchQueryChange.bind(this);
-        this.applyDateFilter = this.applyDateFilter.bind(this);
-        this.resetDateFilter = this.resetDateFilter.bind(this);
-        this.handleResize = this.handleResize.bind(this);
     }
 
-    destroyAllCharts() {
-        if (this.barChart) this.barChart.destroy();
-        if (this.pieChart) this.pieChart.destroy();
-        if (this.receptionBarChart) this.receptionBarChart.destroy();
-        if (this.receptionPieChart) this.receptionPieChart.destroy();
-        if (this.sourceChart) this.sourceChart.destroy();
-        if (this.stageChart) this.stageChart.destroy();
-        if (this.customerTypeChart) this.customerTypeChart.destroy();
-        if (this.customerCountryChart) this.customerCountryChart.destroy();
-    }
+    // Methods defined as arrow functions to maintain proper 'this' binding
+    checkUserRole = async () => {
+        const userGroups = await this.user.hasGroup;
+        this.stats.isSupervisor = await userGroups('property_sales.group_property_sales_supervisor');
+        
+        if (this.stats.isSupervisor) {
+            const userData = await this.orm.searchRead(
+                "res.users",
+                [['id', '=', this.user.userId]],
+                ['property_sales_supervisor_id', 'property_sales_wing_id']
+            );
+            if (userData.length) {
+                this.stats.currentSupervisorId = userData[0].property_sales_supervisor_id?.[0];
+                this.stats.currentWingId = userData[0].property_sales_wing_id?.[0];
+            }
+        }
+    };
 
-    setupChartResizeListeners() {
-        window.addEventListener('resize', this.handleResize);
-    }
+    getDefaultStartDate = () => {
+        const date = new Date();
+        date.setMonth(date.getMonth() - 1);
+        return date.toISOString().split('T')[0];
+    };
 
-    handleResize() {
+    getDefaultEndDate = () => {
+        return new Date().toISOString().split('T')[0];
+    };
+
+    destroyAllCharts = () => {
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                chart.destroy();
+            }
+        });
+        this.charts = {
+            barChart: null,
+            pieChart: null,
+            receptionBarChart: null,
+            receptionPieChart: null,
+            sourceChart: null,
+            stageChart: null,
+            reservationStatusChart: null,
+            wingChart: null,
+            supervisorChart: null,
+            websiteChart: null,
+            activityTypeChart: null
+        };
+    };
+
+    handleResize = () => {
         clearTimeout(this.resizeTimer);
         this.resizeTimer = setTimeout(() => {
             this.renderCharts();
         }, 200);
-    }
+    };
 
-    getDefaultStartDate() {
-        const date = new Date();
-        date.setMonth(date.getMonth() - 1);
-        return date.toISOString().split('T')[0];
-    }
-
-    getDefaultEndDate() {
-        return new Date().toISOString().split('T')[0];
-    }
-
-    async fetchStats() {
+    fetchStats = async () => {
         try {
-            // Get call center and reception source IDs
-            const [callCenterSource, receptionSource] = await Promise.all([
+            // Get call center, reception and website source IDs
+            const [callCenterSource, receptionSource, websiteSource] = await Promise.all([
                 this.orm.search("utm.source", [['name', '=', '6033']], { limit: 1 }),
-                this.orm.search("utm.source", [['name', '=', 'Walk In']], { limit: 1 })
+                this.orm.search("utm.source", [['name', '=', 'Walk In']], { limit: 1 }),
+                this.orm.search("utm.source", [['name', '=', 'Website']], { limit: 1 })
             ]);
             
-            // Build domains with date filters
-            const leadDomain = [];
-            const customerDomain = [];
-            const callCenterDomain = callCenterSource.length ? [['source_id', '=', callCenterSource[0]]] : [];
-            const receptionDomain = receptionSource.length ? [['source_id', '=', receptionSource[0]]] : [];
-
-    
-            const customersnew = await this.orm.searchRead("res.partner", [], ['name', 'is_company', 'customer_rank']);
-            console.log("All partners:", customersnew);
-
-
+            // Build base domains with date filters
+            const baseLeadDomain = [];
+            const baseReservationDomain = [];
             
             if (this.dateFilters.startDate) {
-                leadDomain.push(['create_date', '>=', this.dateFilters.startDate]);
-                customerDomain.push(['create_date', '>=', this.dateFilters.startDate]);
-                if (callCenterSource.length) {
-                    callCenterDomain.push(['create_date', '>=', this.dateFilters.startDate]);
-                }
-                if (receptionSource.length) {
-                    receptionDomain.push(['create_date', '>=', this.dateFilters.startDate]);
-                }
+                baseLeadDomain.push(['create_date', '>=', this.dateFilters.startDate]);
+                baseReservationDomain.push(['create_date', '>=', this.dateFilters.startDate]);
             }
             if (this.dateFilters.endDate) {
-                leadDomain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
-                customerDomain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
-                if (callCenterSource.length) {
-                    callCenterDomain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+                baseLeadDomain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+                baseReservationDomain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+            }
+
+            // Add supervisor/wing filters if user is supervisor
+            let leadDomain = [...baseLeadDomain];
+            let reservationDomain = [...baseReservationDomain];
+            
+            if (this.stats.isSupervisor) {
+                if (this.stats.currentSupervisorId) {
+                    leadDomain.push(['supervisor_id', '=', this.stats.currentSupervisorId]);
                 }
-                if (receptionSource.length) {
-                    receptionDomain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+                if (this.stats.currentWingId) {
+                    leadDomain.push(['wing_id', '=', this.stats.currentWingId]);
                 }
             }
+
+            // Build source-specific domains
+            const callCenterDomain = callCenterSource.length ? 
+                [...leadDomain, ['source_id', '=', callCenterSource[0]]] : [];
+            const receptionDomain = receptionSource.length ? 
+                [...leadDomain, ['source_id', '=', receptionSource[0]]] : [];
+            const websiteDomain = websiteSource.length ? 
+                [...leadDomain, ['source_id', '=', websiteSource[0]]] : [];
             
             // Get counts and data
             const [
                 totalCallCenterLeads, 
                 totalReceptionLeads,
-                totalLeads, 
-                totalCustomers,
+                totalWebsiteLeads,
+                wingLeadsData,
+                supervisorLeadsData,
+                totalReservations,
+                reservationDataByStatus,
                 callCenterData, 
                 receptionDataByStage,
                 receptionData,
                 leadDataBySource, 
                 leadDataByStage,
-                customerDataByType,
-                customerDataByCountry
+                websiteLeadDataByStage
             ] = await Promise.all([
                 callCenterSource.length ? this.orm.searchCount("crm.lead", callCenterDomain) : 0,
                 receptionSource.length ? this.orm.searchCount("crm.lead", receptionDomain) : 0,
-                this.orm.searchCount("crm.lead", leadDomain),
-                this.orm.searchCount("res.partner", [...customerDomain, ['customer_rank', '>', 0]]),
+                websiteSource.length ? this.orm.searchCount("crm.lead", websiteDomain) : 0,
+                this.orm.readGroup(
+                    "crm.lead",
+                    leadDomain,
+                    ['wing_id'],
+                    ['wing_id']
+                ),
+                this.orm.readGroup(
+                    "crm.lead",
+                    leadDomain,
+                    ['supervisor_id'],
+                    ['supervisor_id']
+                ),
+                this.orm.searchCount("property.reservation", reservationDomain),
+                this.orm.readGroup(
+                    "property.reservation",
+                    reservationDomain,
+                    ['status'],
+                    ['status']
+                ),
                 callCenterSource.length ? this.orm.readGroup(
                     "crm.lead",
                     callCenterDomain,
@@ -202,289 +262,511 @@ export class ChartjsSampleCRM extends Component {
                     ['stage_id'],
                     ['stage_id']
                 ),
-                this.orm.readGroup(
-                    "res.partner",
-                    [...customerDomain, ['customer_rank', '>', 0]],
-                    ['is_company'],
-                    ['is_company']
-                ),
-                this.orm.readGroup(
-                    "res.partner",
-                    [...customerDomain, ['customer_rank', '>', 0]],
-                    ['country_id'],
-                    ['country_id']
-                )
+                websiteSource.length ? this.orm.readGroup(
+                    "crm.lead",
+                    websiteDomain,
+                    ['stage_id'],
+                    ['stage_id']
+                ) : []
             ]);
 
-            // Log customer data for debugging
-            console.log("Customer Data by Type:", customerDataByType);
-            console.log("Customer Data by Country:", customerDataByCountry);
+            // Get total leads count
+            const totalLeads = await this.orm.searchCount("crm.lead", leadDomain);
+            const totalOtherLeads = totalLeads - totalCallCenterLeads - totalReceptionLeads - totalWebsiteLeads;
+
+            // Get activity counts from CRM messages
+            const activityMessages = await this.orm.searchRead(
+                "mail.message",
+                [
+                    ['model', '=', 'crm.lead'],
+                    ['date', '>=', this.dateFilters.startDate],
+                    ['date', '<=', this.dateFilters.endDate + ' 23:59:59'],
+                    '|',
+                    ['subtype_id', '=', 3], // Activity subtype
+                    ['body', 'ilike', 'Lead/Opportunity created with phone']
+                ],
+                ['mail_activity_type_id', 'subtype_id', 'body']
+            );
+
+            // Process activity counts
+            const activityCounts = {
+                email: activityMessages.filter(msg => 
+                    msg.mail_activity_type_id && msg.mail_activity_type_id[0] === 1
+                ).length,
+                call: activityMessages.filter(msg => 
+                    msg.mail_activity_type_id && msg.mail_activity_type_id[0] === 4
+                ).length,
+                meeting: activityMessages.filter(msg => 
+                    (msg.mail_activity_type_id && [8, 9].includes(msg.mail_activity_type_id[0])) || // Office/Site visits
+                    (msg.body && msg.body.includes('Lead/Opportunity created with phone')) // Prospects
+                ).length,
+                todo: activityMessages.filter(msg => 
+                    msg.mail_activity_type_id && msg.mail_activity_type_id[0] === 10
+                ).length,
+                upload: activityMessages.filter(msg => 
+                    msg.subtype_id && msg.subtype_id[0] === 2 // Note subtype (often used for uploads)
+                ).length
+            };
+
+            // Get activity type data
+            const activityTypeData = await this.orm.readGroup(
+                "mail.message",
+                [
+                    ['model', '=', 'crm.lead'],
+                    ['date', '>=', this.dateFilters.startDate],
+                    ['date', '<=', this.dateFilters.endDate + ' 23:59:59'],
+                    ['subtype_id', '=', 3] // Activity subtype
+                ],
+                ['mail_activity_type_id'],
+                ['mail_activity_type_id']
+            );
+
+            // Get activity type names
+            const activityTypeIds = activityTypeData.filter(item => item.mail_activity_type_id).map(item => item.mail_activity_type_id[0]);
+            const activityTypes = activityTypeIds.length ? await this.orm.read("mail.activity.type", activityTypeIds, ['name']) : [];
+
+            const processedActivityData = activityTypeData.map(item => {
+                const activityTypeId = item.mail_activity_type_id ? item.mail_activity_type_id[0] : 'unassigned';
+                const activityTypeName = activityTypeId !== 'unassigned' 
+                    ? activityTypes.find(a => a.id === activityTypeId)?.name 
+                    : 'Unassigned';
+                return {
+                    name: activityTypeName || 'Unassigned',
+                    count: item.mail_activity_type_id_count
+                };
+            });
+
+            // Add the "Prospect" type which comes from message body
+            const prospectCount = await this.orm.searchCount("mail.message", [
+                ['model', '=', 'crm.lead'],
+                ['date', '>=', this.dateFilters.startDate],
+                ['date', '<=', this.dateFilters.endDate + ' 23:59:59'],
+                ['body', 'ilike', 'Lead/Opportunity created with phone']
+            ]);
+
+            if (prospectCount > 0) {
+                processedActivityData.push({
+                    name: 'Prospect',
+                    count: prospectCount
+                });
+            }
+
+            // Process wing and supervisor data
+            const wingLeads = {};
+            const supervisorLeads = {};
+            
+            // Get wing names
+            const wingIds = wingLeadsData.filter(item => item.wing_id).map(item => item.wing_id[0]);
+            const wings = wingIds.length ? await this.orm.read("property.sales.wing", wingIds, ['name']) : [];
+            
+            wingLeadsData.forEach(item => {
+                const wingId = item.wing_id ? item.wing_id[0] : 'unassigned';
+                const wingName = wingId !== 'unassigned' 
+                    ? wings.find(w => w.id === wingId)?.name 
+                    : 'Unassigned';
+                wingLeads[wingName || 'Unassigned'] = item.wing_id_count;
+            });
+            
+            // Get supervisor names
+            const supervisorIds = supervisorLeadsData.filter(item => item.supervisor_id).map(item => item.supervisor_id[0]);
+            const supervisors = supervisorIds.length ? await this.orm.read("property.sales.supervisor", supervisorIds, ['name']) : [];
+            
+            supervisorLeadsData.forEach(item => {
+                const supervisorId = item.supervisor_id ? item.supervisor_id[0] : 'unassigned';
+                const supervisorName = supervisorId !== 'unassigned' 
+                    ? supervisors.find(s => s.id === supervisorId)?.name[1] 
+                    : 'Unassigned';
+                supervisorLeads[supervisorName || 'Unassigned'] = item.supervisor_id_count;
+            });
 
             this.stats.totalCallCenterLeads = totalCallCenterLeads;
             this.stats.totalReceptionLeads = totalReceptionLeads;
-            this.stats.customersnew = customersnew.length;
-            this.stats.totalLeads = totalLeads;
-            this.stats.totalCustomers = totalCustomers;
+            this.stats.totalWebsiteLeads = totalWebsiteLeads;
+            this.stats.totalOtherLeads = totalOtherLeads;
+            this.stats.totalAllLeads = totalLeads;
+            this.stats.wingLeads = wingLeads;
+            this.stats.supervisorLeads = supervisorLeads;
+            this.stats.totalReservations = totalReservations;
+            this.stats.reservationDataByStatus = reservationDataByStatus;
             this.stats.callCenterData = callCenterData;
             this.stats.receptionDataByStage = receptionDataByStage;
             this.stats.receptionData = receptionData;
             this.stats.leadDataBySource = leadDataBySource;
             this.stats.leadDataByStage = leadDataByStage;
-            this.stats.customerDataByType = customerDataByType;
-            this.stats.customerDataByCountry = customerDataByCountry;
+            this.stats.activityTypeData = processedActivityData;
+            this.stats.websiteLeadDataByStage = websiteLeadDataByStage;
+            this.stats.activityCounts = activityCounts;
         } catch (error) {
             console.error("Error fetching stats:", error);
         }
-    }
+    };
 
-    renderCharts() {
+    renderCharts = () => {
         this.destroyAllCharts();
 
         // Call Center Charts
-        if (this.stats.callCenterData.length) {
-            const labels = this.stats.callCenterData.map(item => item.stage_id[1]);
-            const data = this.stats.callCenterData.map(item => item.stage_id_count);
-            const backgroundColors = labels.map((_, index) => getColor(index));
+        if (this.stats.callCenterData.length && this.barChartRef.el) {
+            try {
+                const labels = this.stats.callCenterData.map(item => item.stage_id[1]);
+                const data = this.stats.callCenterData.map(item => item.stage_id_count);
+                const backgroundColors = labels.map((_, index) => getColor(index));
 
-            // Bar Chart
-            this.barChart = new Chart(this.barChartRef.el, {
-                type: "bar",
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Call Center Leads by Stage',
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                // Bar Chart
+                this.charts.barChart = new Chart(this.barChartRef.el, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Call Center Leads by Stage',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                            borderWidth: 1
+                        }]
                     },
-                    animation: {
-                        duration: 0
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
                     }
-                }
-            });
+                });
 
-            // Pie Chart
-            this.pieChart = new Chart(this.pieChartRef.el, {
-                type: "pie",
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 0
+                // Pie Chart
+                this.charts.pieChart = new Chart(this.pieChartRef.el, {
+                    type: "pie",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 0
+                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Error rendering call center charts:", error);
+            }
         }
 
-        // Reception Charts (same style as Call Center)
-        if (this.stats.receptionDataByStage.length) {
-            const labels = this.stats.receptionDataByStage.map(item => item.stage_id[1]);
-            const data = this.stats.receptionDataByStage.map(item => item.stage_id_count);
-            const backgroundColors = labels.map((_, index) => getColor(index + 5));
+        // Reception Charts
+        if (this.stats.receptionDataByStage.length && this.receptionBarChartRef.el) {
+            try {
+                const labels = this.stats.receptionDataByStage.map(item => item.stage_id[1]);
+                const data = this.stats.receptionDataByStage.map(item => item.stage_id_count);
+                const backgroundColors = labels.map((_, index) => getColor(index + 5));
 
-            // Bar Chart
-            this.receptionBarChart = new Chart(this.receptionBarChartRef.el, {
-                type: "bar",
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Reception Leads by Stage',
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                // Bar Chart
+                this.charts.receptionBarChart = new Chart(this.receptionBarChartRef.el, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Reception Leads by Stage',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                            borderWidth: 1
+                        }]
                     },
-                    animation: {
-                        duration: 0
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
                     }
-                }
-            });
+                });
 
-            // Pie Chart
-            this.receptionPieChart = new Chart(this.receptionPieChartRef.el, {
-                type: "pie",
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 0
+                // Pie Chart
+                this.charts.receptionPieChart = new Chart(this.receptionPieChartRef.el, {
+                    type: "pie",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 0
+                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Error rendering reception charts:", error);
+            }
+        }
+
+        // Website Charts
+        if (this.stats.websiteLeadDataByStage.length && this.websiteChartRef.el) {
+            try {
+                const labels = this.stats.websiteLeadDataByStage.map(item => item.stage_id[1]);
+                const data = this.stats.websiteLeadDataByStage.map(item => item.stage_id_count);
+                const backgroundColors = labels.map((_, index) => getColor(index + 35));
+
+                this.charts.websiteChart = new Chart(this.websiteChartRef.el, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Website Leads by Stage',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error rendering website chart:", error);
+            }
+        }
+
+        // Activity Type Chart
+        if (this.stats.activityTypeData.length && this.activityTypeChartRef.el) {
+            try {
+                const labels = this.stats.activityTypeData.map(item => item.name);
+                const data = this.stats.activityTypeData.map(item => item.count);
+                const backgroundColors = labels.map((_, index) => getColor(index + 40));
+
+                this.charts.activityTypeChart = new Chart(this.activityTypeChartRef.el, {
+                    type: "doughnut",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error rendering activity type chart:", error);
+            }
+        }
+
+        // Wing and Supervisor Charts
+        if (Object.keys(this.stats.wingLeads).length && this.wingChartRef.el && !this.stats.isSupervisor) {
+            try {
+                const wingLabels = Object.keys(this.stats.wingLeads);
+                const wingData = Object.values(this.stats.wingLeads);
+                const wingColors = wingLabels.map((_, index) => getColor(index + 10));
+
+                this.charts.wingChart = new Chart(this.wingChartRef.el, {
+                    type: "bar",
+                    data: {
+                        labels: wingLabels,
+                        datasets: [{
+                            label: 'Leads by Wing',
+                            data: wingData,
+                            backgroundColor: wingColors,
+                            borderColor: wingColors.map(color => color.replace('0.6', '1')),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error rendering wing chart:", error);
+            }
+        }
+
+        if (Object.keys(this.stats.supervisorLeads).length && this.supervisorChartRef.el && !this.stats.isSupervisor) {
+            try {
+                const supervisorLabels = Object.keys(this.stats.supervisorLeads);
+                const supervisorData = Object.values(this.stats.supervisorLeads);
+                const supervisorColors = supervisorLabels.map((_, index) => getColor(index + 15));
+
+                this.charts.supervisorChart = new Chart(this.supervisorChartRef.el, {
+                    type: "bar",
+                    data: {
+                        labels: supervisorLabels,
+                        datasets: [{
+                            label: 'Leads by Supervisor',
+                            data: supervisorData,
+                            backgroundColor: supervisorColors,
+                            borderColor: supervisorColors.map(color => color.replace('0.6', '1')),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error rendering supervisor chart:", error);
+            }
+        }
+
+        // Reservation Charts
+        if (this.stats.reservationDataByStatus.length && this.reservationStatusChartRef.el) {
+            try {
+                const statusLabels = this.stats.reservationDataByStatus.map(item => item.status);
+                const statusData = this.stats.reservationDataByStatus.map(item => item.status_count);
+                const statusColors = statusLabels.map((_, index) => getColor(index + 20));
+
+                this.charts.reservationStatusChart = new Chart(this.reservationStatusChartRef.el, {
+                    type: "doughnut",
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusData,
+                            backgroundColor: statusColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error rendering reservation status chart:", error);
+            }
         }
 
         // All Leads Charts
-        if (this.stats.leadDataBySource.length) {
-            const sourceLabels = this.stats.leadDataBySource.map(item => item.source_id ? item.source_id[1] : 'Undefined');
-            const sourceData = this.stats.leadDataBySource.map(item => item.source_id_count);
-            const sourceColors = sourceLabels.map((_, index) => getColor(index + 10));
+        if (this.stats.leadDataBySource.length && this.sourceChartRef.el) {
+            try {
+                const sourceLabels = this.stats.leadDataBySource.map(item => item.source_id ? item.source_id[1] : 'Undefined');
+                const sourceData = this.stats.leadDataBySource.map(item => item.source_id_count);
+                const sourceColors = sourceLabels.map((_, index) => getColor(index + 25));
 
-            this.sourceChart = new Chart(this.sourceChartRef.el, {
-                type: "doughnut",
-                data: {
-                    labels: sourceLabels,
-                    datasets: [{
-                        data: sourceData,
-                        backgroundColor: sourceColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 0
-                    }
-                }
-            });
-        }
-
-        if (this.stats.leadDataByStage.length) {
-            const stageLabels = this.stats.leadDataByStage.map(item => item.stage_id[1]);
-            const stageData = this.stats.leadDataByStage.map(item => item.stage_id_count);
-            const stageColors = stageLabels.map((_, index) => getColor(index + 15));
-
-            this.stageChart = new Chart(this.stageChartRef.el, {
-                type: "bar",
-                data: {
-                    labels: stageLabels,
-                    datasets: [{
-                        label: 'All Leads by Stage',
-                        data: stageData,
-                        backgroundColor: stageColors,
-                        borderColor: stageColors.map(color => color.replace('0.6', '1')),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                this.charts.sourceChart = new Chart(this.sourceChartRef.el, {
+                    type: "doughnut",
+                    data: {
+                        labels: sourceLabels,
+                        datasets: [{
+                            data: sourceData,
+                            backgroundColor: sourceColors,
+                            borderWidth: 1
+                        }]
                     },
-                    animation: {
-                        duration: 0
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 0
+                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Error rendering source chart:", error);
+            }
         }
 
-        // Customer Charts
-        if (this.stats.customerDataByType.length) {
-            const typeLabels = this.stats.customerDataByType.map(item => 
-                item.is_company ? 'Company' : 'Individual'
-            );
-            const typeData = this.stats.customerDataByType.map(item => item.is_company_count);
-            const typeColors = ['#3b82f6', '#10b981'];
+        if (this.stats.leadDataByStage.length && this.stageChartRef.el) {
+            try {
+                const stageLabels = this.stats.leadDataByStage.map(item => item.stage_id[1]);
+                const stageData = this.stats.leadDataByStage.map(item => item.stage_id_count);
+                const stageColors = stageLabels.map((_, index) => getColor(index + 30));
 
-            this.customerTypeChart = new Chart(this.customerTypeChartRef.el, {
-                type: "pie",
-                data: {
-                    labels: typeLabels,
-                    datasets: [{
-                        data: typeData,
-                        backgroundColor: typeColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 0
+                this.charts.stageChart = new Chart(this.stageChartRef.el, {
+                    type: "bar",
+                    data: {
+                        labels: stageLabels,
+                        datasets: [{
+                            label: 'All Leads by Stage',
+                            data: stageData,
+                            backgroundColor: stageColors,
+                            borderColor: stageColors.map(color => color.replace('0.6', '1')),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Error rendering stage chart:", error);
+            }
         }
+    };
 
-        if (this.stats.customerDataByCountry.length) {
-            const countryLabels = this.stats.customerDataByCountry.map(item => 
-                item.country_id ? item.country_id[1] : 'No Country'
-            );
-            const countryData = this.stats.customerDataByCountry.map(item => item.country_id_count);
-            const countryColors = countryLabels.map((_, index) => getColor(index + 20));
-
-            this.customerCountryChart = new Chart(this.customerCountryChartRef.el, {
-                type: "pie",
-                data: {
-                    labels: countryLabels,
-                    datasets: [{
-                        data: countryData,
-                        backgroundColor: countryColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 0
-                    }
-                }
-            });
-        }
-    }
-
-    async applyDateFilter() {
-        await this.fetchStats();
-        this.renderCharts();
-    }
-
-    async resetDateFilter() {
-        this.dateFilters.startDate = this.getDefaultStartDate();
-        this.dateFilters.endDate = this.getDefaultEndDate();
-        await this.fetchStats();
-        this.renderCharts();
-    }
-
-    onSearchQueryChange(event) {
-        this.searchQuery.value = event.target.value;
-    }
-
-    goToCRMPage(filter) {
+    // Navigation methods
+    goToCRMPage = (filter) => {
         const domain = [];
         
         if (filter === 'callcenter') {
             domain.push(["source_id.name", "=", "6033"]);
         } else if (filter === 'reception') {
             domain.push(["source_id.name", "=", "Walk In"]);
+        } else if (filter === 'website') {
+            domain.push(["source_id.name", "=", "Website"]);
         }
         
         if (this.dateFilters.startDate) {
@@ -492,6 +774,16 @@ export class ChartjsSampleCRM extends Component {
         }
         if (this.dateFilters.endDate) {
             domain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+        }
+
+        // Add supervisor/wing filters if user is supervisor
+        if (this.stats.isSupervisor) {
+            if (this.stats.currentSupervisorId) {
+                domain.push(['supervisor_id', '=', this.stats.currentSupervisorId]);
+            }
+            if (this.stats.currentWingId) {
+                domain.push(['wing_id', '=', this.stats.currentWingId]);
+            }
         }
 
         this.action.doAction({
@@ -502,9 +794,29 @@ export class ChartjsSampleCRM extends Component {
             target: "current",
             domain: domain,
         });
-    }
+    };
 
-    goToReceptionPage() {
+    goToReservationPage = () => {
+        const domain = [];
+        
+        if (this.dateFilters.startDate) {
+            domain.push(['create_date', '>=', this.dateFilters.startDate]);
+        }
+        if (this.dateFilters.endDate) {
+            domain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+        }
+
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "property.reservation",
+            view_mode: "list",
+            views: [[false, "list"]],
+            target: "current",
+            domain: domain,
+        });
+    };
+
+    goToReceptionPage = () => {
         const domain = [];
         
         if (this.dateFilters.startDate) {
@@ -522,39 +834,117 @@ export class ChartjsSampleCRM extends Component {
             target: "current",
             domain: domain,
         });
-    }
+    };
 
-    // goToCustomerPage() {
-    //     const domain = [['customer_rank', '>', 0]];
+    goToWebsiteLeadsPage = () => {
+        const domain = [];
         
-    //     if (this.dateFilters.startDate) {
-    //         domain.push(['create_date', '>=', this.dateFilters.startDate]);
-    //     }
-    //     if (this.dateFilters.endDate) {
-    //         domain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
-    //     }
+        if (this.dateFilters.startDate) {
+            domain.push(['create_date', '>=', this.dateFilters.startDate]);
+        }
+        if (this.dateFilters.endDate) {
+            domain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+        }
+        domain.push(["source_id.name", "=", "Website"]);
 
-    //     this.action.doAction({
-    //         type: "ir.actions.act_window",
-    //         res_model: "res.partner",
-    //         view_mode: "list",
-    //         views: [[false, "list"]],
-    //         target: "current",
-    //         domain: domain,
-    //     });
-    // }
-
-    goToCustomerPage() {
         this.action.doAction({
             type: "ir.actions.act_window",
-            res_model: "res.partner",
+            res_model: "crm.lead",
             view_mode: "list",
             views: [[false, "list"]],
             target: "current",
-            domain: [['customer_rank', '>', 0]],  // Show all customers
+            domain: domain,
         });
-    }
-    
+    };
+
+    goToActivitiesPage = () => {
+        const domain = [
+            ['model', '=', 'crm.lead'],
+            ['subtype_id', '=', 3] // Activity subtype
+        ];
+        
+        if (this.dateFilters.startDate) {
+            domain.push(['date', '>=', this.dateFilters.startDate]);
+        }
+        if (this.dateFilters.endDate) {
+            domain.push(['date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+        }
+
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "mail.message",
+            view_mode: "list",
+            views: [[false, "list"]],
+            target: "current",
+            domain: domain,
+            context: {
+                search_default_group_by_activity_type: 1,
+                search_default_group_by_author: 1
+            }
+        });
+    };
+
+    goToOtherLeadsPage = () => {
+        const domain = [];
+        
+        // Get source IDs to exclude
+        const excludedSources = [];
+        if (this.stats.totalCallCenterLeads > 0) {
+            excludedSources.push(["source_id.name", "!=", "6033"]);
+        }
+        if (this.stats.totalReceptionLeads > 0) {
+            excludedSources.push(["source_id.name", "!=", "Walk In"]);
+        }
+        if (this.stats.totalWebsiteLeads > 0) {
+            excludedSources.push(["source_id.name", "!=", "Website"]);
+        }
+        
+        if (excludedSources.length > 0) {
+            domain.push(["|", ...excludedSources]);
+        }
+        
+        if (this.dateFilters.startDate) {
+            domain.push(['create_date', '>=', this.dateFilters.startDate]);
+        }
+        if (this.dateFilters.endDate) {
+            domain.push(['create_date', '<=', this.dateFilters.endDate + ' 23:59:59']);
+        }
+
+        // Add supervisor/wing filters if user is supervisor
+        if (this.stats.isSupervisor) {
+            if (this.stats.currentSupervisorId) {
+                domain.push(['supervisor_id', '=', this.stats.currentSupervisorId]);
+            }
+            if (this.stats.currentWingId) {
+                domain.push(['wing_id', '=', this.stats.currentWingId]);
+            }
+        }
+
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "crm.lead",
+            view_mode: "list",
+            views: [[false, "list"]],
+            target: "current",
+            domain: domain,
+        });
+    };
+
+    onSearchQueryChange = (event) => {
+        this.searchQuery.value = event.target.value;
+    };
+
+    applyDateFilter = async () => {
+        await this.fetchStats();
+        this.renderCharts();
+    };
+
+    resetDateFilter = async () => {
+        this.dateFilters.startDate = this.getDefaultStartDate();
+        this.dateFilters.endDate = this.getDefaultEndDate();
+        await this.fetchStats();
+        this.renderCharts();
+    };
 }
 
 ChartjsSampleCRM.template = "crm_dashboard.chartjs_sample_crm";

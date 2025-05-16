@@ -24,9 +24,9 @@ class CrmReception(models.Model):
     # Fields
     name = fields.Char(string='Lead Reference', compute="_compute_lead_name", store=True)
     customer_name = fields.Char(string='Customer Name', required=True, tracking=True)
-    site_ids = fields.Many2many('property.site', string="Preferred Sites", tracking=True)
+    site_ids = fields.Many2many('property.site', string="Preferred Sites", tracking=True, required=True)
     country_id = fields.Many2one('res.country', string="Country", default=lambda self: self.env.ref('base.et').id)
-    new_phone = fields.Char(string="Phone no", tracking=True)
+    new_phone = fields.Char(string="Phone no", tracking=True, required=True)
     secondary_phone = fields.Char(string="Secondary Phone")
     phone_prefix = fields.Char(string="Phone Prefix", compute="_compute_phone_prefix")
     phone_number = fields.Char(string="Phone Number")
@@ -130,8 +130,19 @@ class CrmReception(models.Model):
                 if record.source_id != walk_in_source:
                     raise AccessError(_('Reception users must keep the source as "Walk In"'))
 
-    @api.onchange('new_phone')
-    def _onchange_validate_phone(self):
+    # @api.onchange('new_phone')
+    # def _onchange_validate_phone(self):
+    #     for record in self:
+    #         if record.new_phone and record.country_id and record.country_id.code:
+    #             try:
+    #                 parsed = phonenumbers.parse(record.new_phone, record.country_id.code)
+    #                 if not phonenumbers.is_valid_number(parsed):
+    #                     raise ValidationError(_('Invalid phone number for selected country'))
+    #             except Exception as e:
+    #                 raise ValidationError(_('Invalid phone number format: %s') % str(e))
+
+    @api.constrains('new_phone', 'country_id')
+    def _check_validate_phone(self):
         for record in self:
             if record.new_phone and record.country_id and record.country_id.code:
                 try:

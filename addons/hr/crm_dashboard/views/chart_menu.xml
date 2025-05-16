@@ -12,8 +12,9 @@
      
 
 
+
 <menuitem id="menu_chart_js_sample_crm_new" parent="crm.crm_menu_root" action="action_chart_js_crm_new"
-              name="Dashboard" sequence="-10" />
+              name="Dashboard" groups="crm_dashboard.group_dashboard_new_123" sequence="-10" />
 
              
 
