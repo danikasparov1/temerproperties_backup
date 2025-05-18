@@ -5,7 +5,7 @@
             <!-- 🏷️ Navbar Card with Date Filters -->
             <div class="navbar-card d-flex flex-wrap flex-md-row flex-column justify-content-between align-items-center p-2 mb-3 shadow rounded-4 bg-white">
                 <div class="d-flex flex-column flex-md-row gap-2 w-100">
-                    <input type="text" class="form-control" placeholder="Search..." t-on-input="onSearchQueryChange"/>
+                    <!-- <input type="text" class="form-control" placeholder="Search..." t-on-input="onSearchQueryChange"/> -->
                     <div class="d-flex gap-2">
                         <input type="date" class="form-control" t-model="dateFilters.startDate"/>
                         <span class="align-self-center">to</span>
@@ -18,6 +18,17 @@
 
             <!-- 📊 Statistic Cards -->
             <div class="d-flex flex-wrap flex-md-nowrap gap-3 mb-4">
+
+                  <div class="stat-card reservation-card text-start p-3 rounded-5 shadow position-relative">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="text-dark">Sales Lead</h6>
+                    </div>
+
+                           <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                        <p class="fw-bold fs-6"><t t-esc="stats.totalOtherLeads"/></p>
+                    </div>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📋</span>
+                </div>
                 <div class="stat-card call-center-card text-start p-3 rounded-5 shadow position-relative" t-on-click="() => goToCRMPage('callcenter')">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h6 class="text-dark">Call Center Leads</h6>
@@ -37,6 +48,7 @@
                     </div>
                     <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">🏢</span>
                 </div>
+
                 
                 <div class="stat-card website-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToWebsiteLeadsPage">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -48,16 +60,16 @@
                     <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">🌐</span>
                 </div>
                 
-                <div class="stat-card reservation-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToOtherLeadsPage">
+                <!-- <div class="stat-card reservation-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToOtherLeadsPage">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="text-dark">Other Sales Lead</h6>
+                        <h6 class="text-dark">Sales Lead</h6>
                     </div>
 
                            <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
                         <p class="fw-bold fs-6"><t t-esc="stats.totalOtherLeads"/></p>
                     </div>
                     <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📋</span>
-                </div>
+                </div> -->
 
 
                     <!-- <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
@@ -94,8 +106,8 @@
                             <div class="activity-item d-flex align-items-center gap-2">
                                 <span class="activity-icon">📅</span>
                                 <div>
-                                    <small class="text-muted">Meeting</small>
-                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.meeting"/></p>
+                                    <small class="text-muted">OFFICE VISIT</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.office_visit"/></p>
                                 </div>
                             </div>
                         </div>
@@ -104,15 +116,15 @@
                             <div class="activity-item d-flex align-items-center gap-2">
                                 <span class="activity-icon">✅</span>
                                 <div>
-                                    <small class="text-muted">Todo</small>
-                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.todo"/></p>
+                                    <small class="text-muted">SITE VISIT</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.site_visit"/></p>
                                 </div>
                             </div>
                             <div class="activity-item d-flex align-items-center gap-2">
                                 <span class="activity-icon">📎</span>
                                 <div>
-                                    <small class="text-muted">Upload</small>
-                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.upload"/></p>
+                                    <small class="text-muted">SMS</small>
+                                    <p class="mb-0 fw-bold"><t t-esc="stats.activityCounts.sms"/></p>
                                 </div>
                             </div>
                         </div>
@@ -120,35 +132,43 @@
                 </div>
                 
                 <!-- Other Leads Card -->
-                <div class="stat-card other-leads-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToReservationPage">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="text-dark">Total Reservations</h6>
+                <div class="d-flex flex-column gap-3">
+                    <div class="stat-card other-leads-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToReservationPage">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="text-dark">Total Reservations</h6>
+                        </div>
+                        <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                            <p class="fw-bold fs-6"><t t-esc="stats.totalReservations"/></p>
+                        </div>
+                        <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📅</span>
                     </div>
-
-                          <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
-                        <p class="fw-bold fs-6"><t t-esc="stats.totalReservations"/></p>
+                    <!-- Sold Properties Card -->
+                    <div class="stat-card sold-properties-card text-start p-3 rounded-5 shadow position-relative" t-on-click="goToSoldPropertiesPage">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="text-dark">Sold Properties</h6>
+                        </div>
+                        <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
+                            <p class="fw-bold fs-6"><t t-esc="stats.totalSoldProperties"/></p>
+                        </div>
+                        <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">💰</span>
                     </div>
-                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📅</span>
                 </div>
-
-
-                    <!-- <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
-                        <p class="fw-bold fs-6"><t t-esc="stats.totalOtherLeads"/></p>
-                    </div>
-                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📋</span>
-                </div> -->
-                
+    
                 <!-- Total Leads Card -->
-                <div class="stat-card total-leads-card text-start p-3 rounded-5 shadow position-relative">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="text-dark">Total Leads</h6>
+                <div class="stat-card total-leads-card text-center p-3 rounded-5 shadow position-relative d-flex flex-column justify-content-center">
+                    <h2 class="welcome-text mb-4">Temer Properties</h2>
+                    <div class="total-leads-content">
+                        <h6 class="text-dark mb-3">Total Leads</h6>
+                        <div class="value-display mb-3">
+                            <p class="fw-bold fs-4 mb-0"><t t-esc="stats.totalAllLeads"/></p>
+                        </div>
                     </div>
-                    <div class="value-oval position-absolute bottom-0 start-0 ms-2 mb-2">
-                        <p class="fw-bold fs-6"><t t-esc="stats.totalAllLeads"/></p>
-                    </div>
-                    <span class="crm-icon position-absolute bottom-0 end-0 me-2 mb-2">📊</span>
+                    <span class="crm-icon position-absolute bottom-0 end-0 me-3 mb-3">📊</span>
                 </div>
             </div>
+
+            
+
 
             <!-- 📈 Call Center Charts Section -->
             <div class="charts-container d-flex flex-column flex-md-row gap-3 mb-4">
@@ -298,13 +318,35 @@
                 background: #f3e8ff;
                 height: auto;
             }
+
+              .sold-properties-card {
+        background: #d1fae5;
+        height: 120px;
+    }
             .other-leads-card {
                 background: #ffedd5;
                 height: 120px;
             }
             .total-leads-card {
                 background: #ecfccb;
-                height: 120px;
+                height: 300px;
+            }
+            .total-leads-card .welcome-text {
+                color: #2d3748;
+                font-size: 1.8rem;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            }
+            .total-leads-card .total-leads-content {
+                background: rgba(255,255,255,0.3);
+                padding: 1rem;
+                border-radius: 1rem;
+                backdrop-filter: blur(5px);
+            }
+            .total-leads-card .value-display {
+                background: rgba(255,255,255,0.5);
+                border-radius: 0.5rem;
+                padding: 0.5rem 1rem;
+                display: inline-block;
             }
 
             .activity-grid {
